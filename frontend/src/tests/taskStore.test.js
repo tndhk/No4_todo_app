@@ -1,4 +1,5 @@
-import { act, renderHook } from '@testing-library/react-hooks';
+import { act } from 'react-dom/test-utils';
+import { renderHook, waitFor } from '@testing-library/react';
 import useTaskStore from '../store/taskStore';
 import { taskApi, categoryApi } from '../api/client';
 
@@ -43,7 +44,7 @@ describe('TaskStore', () => {
       
       taskApi.getTasks.mockResolvedValue(mockTasks);
       
-      const { result, waitForNextUpdate } = renderHook(() => useTaskStore());
+      const { result } = renderHook(() => useTaskStore());
       
       act(() => {
         result.current.fetchTasks();
@@ -51,9 +52,10 @@ describe('TaskStore', () => {
       
       expect(result.current.loading).toBe(true);
       
-      await waitForNextUpdate();
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
       
-      expect(result.current.loading).toBe(false);
       expect(result.current.tasks).toEqual(mockTasks);
       expect(result.current.error).toBeNull();
       expect(taskApi.getTasks).toHaveBeenCalledWith({
@@ -67,15 +69,16 @@ describe('TaskStore', () => {
       const error = new Error('Failed to fetch tasks');
       taskApi.getTasks.mockRejectedValue(error);
       
-      const { result, waitForNextUpdate } = renderHook(() => useTaskStore());
+      const { result } = renderHook(() => useTaskStore());
       
       act(() => {
         result.current.fetchTasks();
       });
       
-      await waitForNextUpdate();
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
       
-      expect(result.current.loading).toBe(false);
       expect(result.current.error).toBe(error.message);
     });
   });
@@ -87,7 +90,7 @@ describe('TaskStore', () => {
       
       taskApi.createTask.mockResolvedValue(createdTask);
       
-      const { result, waitForNextUpdate } = renderHook(() => useTaskStore());
+      const { result } = renderHook(() => useTaskStore());
       
       act(() => {
         result.current.createTask(taskData);
@@ -95,9 +98,10 @@ describe('TaskStore', () => {
       
       expect(result.current.loading).toBe(true);
       
-      await waitForNextUpdate();
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
       
-      expect(result.current.loading).toBe(false);
       expect(result.current.tasks).toContainEqual(createdTask);
       expect(taskApi.createTask).toHaveBeenCalledWith(taskData);
     });
@@ -116,15 +120,16 @@ describe('TaskStore', () => {
       const updatedTask = { id: 1, title: 'Task 1', status: true };
       taskApi.updateTaskStatus.mockResolvedValue(updatedTask);
       
-      const { result, waitForNextUpdate } = renderHook(() => useTaskStore());
+      const { result } = renderHook(() => useTaskStore());
       
       act(() => {
         result.current.updateTaskStatus(1, true);
       });
       
-      await waitForNextUpdate();
+      await waitFor(() => {
+        expect(result.current.tasks).toContainEqual(updatedTask);
+      });
       
-      expect(result.current.tasks).toContainEqual(updatedTask);
       expect(result.current.tasks.find(t => t.id === 2).status).toBe(false);
       expect(taskApi.updateTaskStatus).toHaveBeenCalledWith(1, true);
     });
@@ -134,15 +139,16 @@ describe('TaskStore', () => {
     it('should update filters and fetch tasks', async () => {
       taskApi.getTasks.mockResolvedValue([]);
       
-      const { result, waitForNextUpdate } = renderHook(() => useTaskStore());
+      const { result } = renderHook(() => useTaskStore());
       
       act(() => {
         result.current.setFilter('status', true);
       });
       
-      await waitForNextUpdate();
+      await waitFor(() => {
+        expect(result.current.filters.status).toBe(true);
+      });
       
-      expect(result.current.filters.status).toBe(true);
       expect(taskApi.getTasks).toHaveBeenCalledWith({
         status: true,
         priority: null,
@@ -155,9 +161,10 @@ describe('TaskStore', () => {
         result.current.setFilter('priority', 'high');
       });
       
-      await waitForNextUpdate();
+      await waitFor(() => {
+        expect(result.current.filters.priority).toBe('high');
+      });
       
-      expect(result.current.filters.priority).toBe('high');
       expect(taskApi.getTasks).toHaveBeenCalledWith({
         status: true,
         priority: 'high',
@@ -172,18 +179,18 @@ describe('TaskStore', () => {
       
       taskApi.getTasks.mockResolvedValue([]);
       
-      const { result, waitForNextUpdate } = renderHook(() => useTaskStore());
+      const { result } = renderHook(() => useTaskStore());
       
       act(() => {
         result.current.clearFilters();
       });
       
-      await waitForNextUpdate();
-      
-      expect(result.current.filters).toEqual({
-        status: null,
-        priority: null,
-        categoryId: null,
+      await waitFor(() => {
+        expect(result.current.filters).toEqual({
+          status: null,
+          priority: null,
+          categoryId: null,
+        });
       });
       
       expect(taskApi.getTasks).toHaveBeenCalledWith({

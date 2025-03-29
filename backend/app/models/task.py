@@ -22,6 +22,5 @@ class Task(Base):
 
     # リレーションシップ
     category = relationship("Category", back_populates="tasks")
-    subtasks = relationship("Task", 
-                           backref=relationship("Task", remote_side=[id]),
-                           cascade="all, delete-orphan")
+    parent = relationship("Task", back_populates="subtasks", remote_side=[id], uselist=False)
+    subtasks = relationship("Task", back_populates="parent", cascade="all, delete-orphan")
