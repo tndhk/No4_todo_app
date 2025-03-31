@@ -13,6 +13,8 @@ export const TaskModal = () => {
     description: '',
     priority: 'medium',
     due_date: '',
+    status: false,
+    order_index: 0,
     category_id: null,
     parent_task_id: null
   });
@@ -38,6 +40,8 @@ export const TaskModal = () => {
         description: taskModalData.description || '',
         priority: taskModalData.priority || 'medium',
         due_date: formattedDueDate,
+        status: taskModalData.status || false,
+        order_index: taskModalData.order_index || 0,
         category_id: taskModalData.category_id || null,
         parent_task_id: taskModalData.parent_task_id || null
       });
@@ -63,6 +67,16 @@ export const TaskModal = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // 安全なデータのみをログに出力（循環参照を避ける）
+    console.log('フォーム送信:', {
+      title: formData.title,
+      description: formData.description,
+      priority: formData.priority,
+      due_date: formData.due_date,
+      category_id: formData.category_id,
+      parent_task_id: formData.parent_task_id
+    });
+    
     // バリデーション
     if (!formData.title.trim()) {
       setError('タイトルを入力してください');
@@ -70,25 +84,38 @@ export const TaskModal = () => {
     }
     
     try {
+      console.log('API呼び出し開始', taskModalMode);
+      
+    // 純粋なデータオブジェクトを作成（DOMノードなどを除外）
+    const cleanedTaskData = {
+      title: formData.title,
+      description: formData.description,
+      priority: formData.priority,
+      due_date: formData.due_date ? new Date(formData.due_date).toISOString() : null,
+      status: false, // 新規作成時は未完了
+      order_index: 0, // デフォルト値
+      category_id: formData.category_id === '' || formData.category_id === null 
+        ? null 
+        : Number(formData.category_id),
+      parent_task_id: formData.parent_task_id === '' || formData.parent_task_id === null 
+        ? null 
+        : Number(formData.parent_task_id)
+    };
+      
+      console.log('タスク作成データ:', cleanedTaskData);
+      
       if (taskModalMode === 'create') {
         // タスク作成
-        await createTask({
-          ...formData,
-          category_id: formData.category_id === null ? null : Number(formData.category_id),
-          parent_task_id: formData.parent_task_id === null ? null : Number(formData.parent_task_id)
-        });
+        await createTask(cleanedTaskData);
       } else {
         // タスク更新
-        await updateTask(taskModalData.id, {
-          ...formData,
-          category_id: formData.category_id === null ? null : Number(formData.category_id),
-          parent_task_id: formData.parent_task_id === null ? null : Number(formData.parent_task_id)
-        });
+        await updateTask(taskModalData.id, cleanedTaskData);
       }
       
       closeTaskModal();
     } catch (error) {
-      setError('操作に失敗しました: ' + error.message);
+      console.error('タスク作成/更新エラー:', error.toString());
+      setError('操作に失敗しました: ' + error.toString());
     }
   };
   

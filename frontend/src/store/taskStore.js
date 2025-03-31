@@ -52,17 +52,21 @@ const useTaskStore = create((set, get) => ({
   },
   
   createTask: async (taskData) => {
+    console.log('TaskStore.createTask 呼び出し:', taskData);
     set({ loading: true, error: null });
     try {
+      console.log('taskApi.createTask を呼び出し中...');
       const createdTask = await taskApi.createTask(taskData);
+      console.log('タスク作成成功:', createdTask);
       set(state => ({ 
         tasks: [...state.tasks, createdTask],
         loading: false 
       }));
       return createdTask;
     } catch (error) {
+      console.error('タスク作成失敗:', error);
       set({ error: error.message, loading: false });
-      console.error('Failed to create task:', error);
+      throw error;
     }
   },
   

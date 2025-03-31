@@ -2,10 +2,12 @@ import axios from 'axios';
 
 // APIクライアントの設定
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1',
+  baseURL: 'http://localhost:8000/api/v1',
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 10000, // 10秒
+  withCredentials: false
 });
 
 // タスク関連のAPI
@@ -30,8 +32,31 @@ export const taskApi = {
 
   // タスク作成
   createTask: async (taskData) => {
-    const response = await api.post('/tasks', taskData);
-    return response.data;
+    console.log('API createTask 呼び出し:', taskData);
+    console.log('API URL:', api.defaults.baseURL + '/tasks');
+    
+    const options = {
+      method: 'POST',
+      url: '/tasks',
+      data: taskData,
+      headers: { 'Content-Type': 'application/json' }
+    };
+    
+    console.log('API リクエスト設定:', options);
+    
+    try {
+      const response = await api.request(options);
+      console.log('API レスポンス:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('API エラー:', {
+        message: error.message,
+        status: error.response?.status,
+        response: error.response?.data,
+        request: error.request ? 'リクエストは送信されたがレスポンスがありません' : 'リクエスト未送信'
+      });
+      throw error;
+    }
   },
 
   // タスク更新
